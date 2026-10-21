@@ -1,0 +1,24 @@
+// Regenerates docs/screenshots from the production build (needs `npm run preview` running on :4173).
+import { chromium } from '@playwright/test';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1280, height: 800 } });
+await p.goto('http://127.0.0.1:4173/');
+await p.screenshot({ path: 'docs/screenshots/empty-desktop.png' });
+await p.getByTestId('file-input').setInputFiles(['photo-exif.jpg', 'alpha.png', 'flat-graphic.png', 'photo.webp', 'fake.jpg'].map((f) => 'tests/fixtures/' + f));
+await p.waitForFunction(() => document.querySelectorAll('[data-testid=file-row]:is([data-status=done],[data-status=error])').length === 5, null, { timeout: 120000 });
+await p.locator('details.settings summary').click();
+await p.screenshot({ path: 'docs/screenshots/results-desktop.png', fullPage: true });
+await p.locator('details.settings summary').click();
+await p.getByRole('button', { name: 'Comparar photo-exif.jpg' }).click();
+await p.waitForTimeout(400);
+await p.screenshot({ path: 'docs/screenshots/compare.png' });
+await p.keyboard.press('Escape');
+await p.setViewportSize({ width: 375, height: 812 });
+await p.screenshot({ path: 'docs/screenshots/results-mobile.png', fullPage: true });
+await p.emulateMedia({ colorScheme: 'dark' });
+await p.waitForTimeout(500);
+await p.setViewportSize({ width: 1280, height: 800 });
+await p.waitForTimeout(300);
+await p.screenshot({ path: 'docs/screenshots/results-dark.png' });
+await b.close();
+console.log('ok');

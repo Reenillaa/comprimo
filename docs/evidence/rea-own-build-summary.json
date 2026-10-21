@@ -1,0 +1,50 @@
+{
+ "tool": "rea analyze-javascript-application 6.7.0 (CLI, --json)",
+ "target": "dist/ (npm run build)",
+ "evidence_id": "ev_7050aa9d914c0aa31d54c0381c30a6364d3e1ba7a64447d27f4ae3fa05edbed0",
+ "root_artifact_sha256": "6958ad0882d937ef8cfd4ec1a70f11569eb9aa406c9ae54dff03b06ffebb8910",
+ "statistics": {
+  "relevant_files": 69,
+  "nested_asar_containers": 0,
+  "text_bytes_read": 3548923,
+  "invalid_utf8_files": 0,
+  "parsed_javascript_files": 33,
+  "skipped_javascript_files": 1,
+  "visited_ast_nodes": 143923,
+  "findings": 188,
+  "modules": 0,
+  "parse_failures": 0
+ },
+ "constructs_request_by_file": {
+  "assets/decode-DchBjK0Q.js": 2,
+  "assets/decode-akZalmfX.js": 2,
+  "assets/jxl_enc_mt-CC66MfFX.js": 2,
+  "assets/resize-C7svrVhW.js": 3,
+  "assets/jxl_enc_mt-DMufUMBs.js": 2,
+  "assets/jxl_enc_mt_simd-CLn4lRV2.js": 2,
+  "assets/jxl_enc-DoUyBxLI.js": 2,
+  "assets/encode-BIVQ9u18.js": 2,
+  "assets/avif_enc-DLkI1F_w.js": 2,
+  "assets/avif_enc_mt-CJCrW5wT.js": 2,
+  "assets/decode-CUOHONHe.js": 1,
+  "assets/avif_enc_mt-BVKYIAs6.js": 2,
+  "assets/decode-DhUWBPIR.js": 2,
+  "assets/squoosh_oxipng-BI4Vin5J.js": 1,
+  "assets/jxl_enc_mt_simd-CkqsGXnh.js": 2,
+  "assets/webp_enc-XbVNZKAM.js": 2,
+  "assets/decode-DhU-OooN.js": 2,
+  "assets/squoosh_oxipng-Cl62UKhE.js": 1
+ },
+ "request_endpoints_resolved": [],
+ "http_url_literals_in_bundle": [],
+ "interpretation": "REA: every fetch() construction it found is in Emscripten/wasm-bindgen codec glue (loading .wasm from the same origin); none in the engine worker. Manual review adds the Vite modulepreload polyfill in the entry chunk (same-origin). No absolute URL literals in the bundle. Static analysis does not prove runtime behaviour: see the E2E network test and the CSP test.",
+ "limitations": [
+  "CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.",
+  "Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.",
+  "JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.",
+  "Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.",
+  "Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.",
+  "Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code."
+ ],
+ "manual_review": "grep found one more fetch in assets/index-*.js not reported by REA: Vite's modulepreload polyfill `fetch(e.href, n)`, which prefetches same-origin <link rel=modulepreload> scripts. It is not an external call, but it shows REA's request extraction is not exhaustive for minified code."
+}

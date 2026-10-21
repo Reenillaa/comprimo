@@ -1,0 +1,44 @@
+[
+ {
+  "ts": "2026-10-20T23:56:09.277Z",
+  "kind": "connect_rejected",
+  "detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  "host": "tinyjpg.com:443"
+ },
+ {
+  "ts": "2026-10-20T23:56:09.571Z",
+  "kind": "connect_rejected",
+  "detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  "host": "tinypng.com:443"
+ },
+ {
+  "ts": "2026-10-20T23:56:14.580Z",
+  "kind": "connect_rejected",
+  "detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  "host": "tinypng.com:443"
+ },
+ {
+  "ts": "2026-10-20T23:56:14.840Z",
+  "kind": "connect_rejected",
+  "detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  "host": "tinify.com:443"
+ },
+ {
+  "ts": "2026-10-20T23:56:15.113Z",
+  "kind": "connect_rejected",
+  "detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  "host": "squoosh.app:443"
+ },
+ {
+  "ts": "2026-10-20T23:56:15.978Z",
+  "kind": "connect_rejected",
+  "detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  "host": "web.archive.org:443"
+ },
+ {
+  "ts": "2026-10-20T23:56:16.011Z",
+  "kind": "connect_rejected",
+  "detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  "host": "cdn.jsdelivr.net:443"
+ }
+]
