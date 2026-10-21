@@ -52,7 +52,7 @@ npm run package:mac    # Comprimo.app (arm64 + x64) en release/
 `package:mac` funciona en un Mac (firma ad-hoc con `codesign`). Desde Linux también, pasando
 `RCODESIGN=/ruta/a/rcodesign` (y `ELECTRON_ZIP_DIR` si la descarga de Electron falla).
 El workflow `.github/workflows/mac.yml` lo hace en un Mac de GitHub, verifica la firma con
-`codesign --verify --deep --strict`, arranca la app empaquetada y, al subir una etiqueta `v*`, publica los zips como Release.
+`codesign --verify --deep --strict`, arranca la app empaquetada y, cuando `package.json` trae una versión nueva, publica los zips como Release `vX.Y.Z`.
 
 ## Pruebas
 

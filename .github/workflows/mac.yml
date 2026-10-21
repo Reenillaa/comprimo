@@ -1,7 +1,7 @@
 name: macOS app
 
 # Builds, tests and packages Comprimo.app on a real Mac.
-# Push a tag like v1.0.0 to publish the zips as a GitHub Release.
+# Pushing to main with a new version in package.json publishes the zips as a GitHub Release (vX.Y.Z).
 on:
   push:
     branches: [main]
@@ -59,8 +59,14 @@ jobs:
           path: release/*.zip
           if-no-files-found: error
 
-      - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish release (when package.json has a new version)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" release/*.zip --title "Comprimo ${GITHUB_REF_NAME}" --notes-file docs/release-notes.md
+        run: |
+          V="v$(node -p "require('./package.json').version")"
+          if gh release view "$V" >/dev/null 2>&1; then
+            echo "La release $V ya existe: no se publica nada."
+          else
+            gh release create "$V" release/*.zip --target "$GITHUB_SHA" --title "Comprimo $V" --notes-file docs/release-notes.md
+          fi
