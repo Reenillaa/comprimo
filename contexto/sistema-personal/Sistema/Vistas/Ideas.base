@@ -1,0 +1,31 @@
+filters:
+  and:
+    - file.inFolder("Sistema")
+    - not:
+        - file.inFolder("Sistema/Plantillas")
+    - tipo == "idea"
+properties:
+  file.name:
+    displayName: Nota
+views:
+  - type: table
+    name: Recientes
+    order:
+      - file.name
+      - area
+      - fecha
+    sort:
+      - property: file.ctime
+        direction: DESC
+    limit: 8
+  - type: table
+    name: Fotografía
+    filters:
+      and:
+        - area == "fotografía"
+    order:
+      - file.name
+      - fecha
+    sort:
+      - property: file.ctime
+        direction: DESC

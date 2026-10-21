@@ -1,0 +1,91 @@
+filters:
+  and:
+    - file.inFolder("Sistema")
+    - not:
+        - file.inFolder("Sistema/Plantillas")
+properties:
+  file.name:
+    displayName: Nota
+  note.asignatura:
+    displayName: Asignatura
+  note.estado:
+    displayName: Estado
+  note.proximo_repaso:
+    displayName: Próximo repaso
+  note.intervalo:
+    displayName: Intervalo (días)
+  formula.cuando:
+    displayName: Cuándo
+  formula.etapa:
+    displayName: Etapa
+formulas:
+  cuando: if(proximo_repaso, proximo_repaso.relative(), "")
+  etapa: if(estado == "pendiente", "1 · Pendiente", if(estado == "estudiando", "2 · Estudiando", if(estado == "repasar", "3 · Repasar", if(estado == "comprendido", "4 · Comprendido", "Sin estado"))))
+views:
+  - type: table
+    name: Repasar hoy
+    filters:
+      and:
+        - tipo == "apunte" || tipo == "concepto"
+        - estado != "pendiente"
+        - proximo_repaso
+        - proximo_repaso <= today()
+    order:
+      - file.name
+      - asignatura
+      - estado
+      - formula.cuando
+      - intervalo
+    sort:
+      - property: proximo_repaso
+        direction: ASC
+  - type: table
+    name: Estudiando
+    filters:
+      and:
+        - tipo == "apunte" || tipo == "concepto"
+        - estado == "estudiando" || estado == "repasar"
+    order:
+      - file.name
+      - asignatura
+      - estado
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC
+    limit: 10
+  - type: table
+    name: Temario por estado
+    filters:
+      and:
+        - tipo == "apunte" || tipo == "concepto"
+    groupBy:
+      property: formula.etapa
+      direction: ASC
+    order:
+      - file.name
+      - asignatura
+      - formula.cuando
+  - type: table
+    name: Asignaturas
+    filters:
+      and:
+        - tipo == "asignatura"
+    order:
+      - file.name
+      - curso
+      - profesor
+  - type: table
+    name: Esta asignatura
+    filters:
+      and:
+        - tipo == "apunte" || tipo == "concepto" || tipo == "recurso"
+        - asignatura == this.file
+    groupBy:
+      property: formula.etapa
+      direction: ASC
+    order:
+      - file.name
+      - tipo
+      - tema
+      - formula.cuando

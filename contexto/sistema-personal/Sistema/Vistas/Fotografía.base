@@ -1,0 +1,31 @@
+filters:
+  and:
+    - file.inFolder("Sistema")
+    - not:
+        - file.inFolder("Sistema/Plantillas")
+properties:
+  file.name:
+    displayName: Nota
+views:
+  - type: table
+    name: Aprendizajes
+    filters:
+      and:
+        - tipo == "aprendizaje"
+    order:
+      - file.name
+      - trabajo
+      - fecha
+      - notion
+    sort:
+      - property: fecha
+        direction: DESC
+  - type: cards
+    name: Conocimiento
+    filters:
+      and:
+        - tipo == "recurso"
+        - file.inFolder("Sistema/Fotografía")
+    order:
+      - file.name
+      - tema
