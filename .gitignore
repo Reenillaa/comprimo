@@ -6,3 +6,4 @@ test-results
 playwright-report
 *.log
 build/linux-test
+*.bundle
