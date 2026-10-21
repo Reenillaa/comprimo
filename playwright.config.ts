@@ -7,7 +7,12 @@ export default defineConfig({
   expect: { timeout: 120_000 },
   fullyParallel: false,
   workers: 1,
-  reporter: [['list'], ['json', { outputFile: 'test-results/e2e-results.json' }]],
+  // In CI: one retry (shared macOS runners are slow and noisy; a retried pass is reported as "flaky",
+  // not hidden) and GitHub annotations, so failures are readable without downloading logs.
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI
+    ? [['github'], ['list'], ['json', { outputFile: 'test-results/e2e-results.json' }]]
+    : [['list'], ['json', { outputFile: 'test-results/e2e-results.json' }]],
   use: {
     baseURL: 'http://127.0.0.1:4173',
     acceptDownloads: true,
