@@ -35,7 +35,7 @@ test.afterEach(async () => {
 });
 
 test('arranca desde app:// con el puente de escritorio y sin Node en la interfaz', async () => {
-  expect(page.url()).toBe('app://comprimo/index.html');
+  await page.waitForURL('app://comprimo/index.html');
   await expect(page.getByRole('heading', { name: /Fotos ligeras/ })).toBeVisible();
   const env = await page.evaluate(() => ({
     bridge: typeof (window as unknown as { comprimoDesktop?: object }).comprimoDesktop,

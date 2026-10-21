@@ -20,7 +20,7 @@ test('la app empaquetada arranca, procesa una foto y la guarda', async () => {
   });
   try {
     const page = await app.firstWindow();
-    expect(page.url()).toBe('app://comprimo/index.html');
+    await page.waitForURL('app://comprimo/index.html');
     await page.getByTestId('pick-output').click();
     await page.getByTestId('file-input').setInputFiles([resolve('tests/fixtures/photo-exif.jpg')]);
     await expect(page.locator('[data-testid=file-row]')).toHaveAttribute('data-status', 'done', { timeout: 120_000 });
