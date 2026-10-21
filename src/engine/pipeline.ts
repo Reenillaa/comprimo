@@ -18,6 +18,8 @@ import {
 export interface PipelineHooks {
   onProgress?: ProgressFn;
   signal?: { cancelled: boolean };
+  /** Also return a WebP preview whose longest edge is at most this many pixels. */
+  thumbnail?: number;
 }
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -137,7 +139,7 @@ export async function processImage(
           warnings.push('Los metadatos EXIF originales estaban dañados y no se han copiado.');
         }
       }
-    } else {
+    } else if (info.kind === 'jpeg' && extractExif(input)) {
       warnings.push('Los metadatos solo se conservan de JPEG a JPEG; en este archivo se han eliminado.');
     }
   }
@@ -156,9 +158,20 @@ export async function processImage(
       if (larger) warnings.push('El resultado ocupa más que el original.');
     }
   }
+  let thumbnail: Uint8Array | undefined;
+  if (hooks.thumbnail) {
+    try {
+      const r = Math.min(1, hooks.thumbnail / Math.max(img.width, img.height));
+      const small = r < 1 ? await codecs.resize(img, Math.max(1, Math.round(img.width * r)), Math.max(1, Math.round(img.height * r))) : img;
+      thumbnail = new Uint8Array(await codecs.webp(small, { quality: 72, method: 2, alpha_quality: 80 }));
+    } catch {
+      // previews are optional
+    }
+  }
   progress(1, 'Terminado');
 
   return {
+    thumbnail,
     bytes,
     format: usedOriginal ? info.kind : chosen.format,
     mime: MIME[usedOriginal ? info.kind : chosen.format],

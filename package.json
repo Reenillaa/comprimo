@@ -10,9 +10,13 @@
     "build": "tsc -p tsconfig.json && vite build && node scripts/copy-licenses.mjs",
     "preview": "vite preview --port 4173 --strictPort",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=desktop",
     "fixtures": "node scripts/make-fixtures.mjs",
-    "bench": "VITEST_INCLUDE=tests/bench/*.bench.test.ts vitest run"
+    "bench": "VITEST_INCLUDE=tests/bench/*.bench.test.ts vitest run",
+    "test:electron": "playwright test --project=electron tests/electron/desktop.spec.ts",
+    "desktop": "npm run build && electron .",
+    "icon": "node scripts/make-icon.mjs",
+    "package:mac": "npm run build && node scripts/package-mac.mjs"
   },
   "dependencies": {
     "@jsquash/avif": "^2.1.1",
@@ -28,14 +32,21 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@electron/packager": "^20.3.0",
     "@playwright/test": "^1.56.1",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.9.2",
+    "electron-builder": "^26.15.3",
     "sharp": "^0.35.5",
     "typescript": "~5.9",
     "vite": "^8.3.4",
     "vitest": "^5.0.5"
-  }
+  },
+  "main": "electron/main.cjs",
+  "productName": "Comprimo",
+  "author": "Reenillaa",
+  "homepage": "https://github.com/Reenillaa/comprimo"
 }

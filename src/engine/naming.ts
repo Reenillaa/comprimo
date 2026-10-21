@@ -36,3 +36,11 @@ export function uniqueNames(names: string[]): string[] {
     return candidate;
   });
 }
+
+/** Insert a suffix before the extension: ("foto.jpg", "_web") → "foto_web.jpg". */
+export function withSuffix(name: string, suffix: string): string {
+  const clean = suffix.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '').slice(0, 40);
+  if (!clean) return name;
+  const dot = name.lastIndexOf('.');
+  return dot > 0 ? `${name.slice(0, dot)}${clean}${name.slice(dot)}` : `${name}${clean}`;
+}

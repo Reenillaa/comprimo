@@ -1,75 +1,75 @@
 # Comprimo
 
-Compresor y conversor de imágenes **gratis, sin límites y 100 % local**. Funciona en el navegador con
-códecs reales compilados a WebAssembly (MozJPEG, libwebp, libavif, libjxl, OxiPNG), así que las imágenes
-nunca salen de tu equipo. Sin cuentas, sin claves API, sin planes de pago, sin marcas de agua.
+**Compresor de fotos para fotógrafos. Gratis, sin límites y 100 % local.** App para Mac y versión
+web, con códecs profesionales (MozJPEG, libwebp, libavif, libjxl, OxiPNG) que funcionan en tu propio
+equipo: tus fotos nunca se suben a ningún sitio. Sin cuentas, sin planes de pago, sin marcas de agua.
 
-Inspirado en el flujo de trabajo de TinyJPG/TinyPNG (arrastrar, comprimir, descargar), con identidad
-propia. **No está afiliado con Tinify** y no usa su API.
+![Comprimo en modo sesión](docs/screenshots/desktop-session.png)
 
-![Resultados en escritorio](docs/screenshots/results-desktop.png)
+## Pensado para una sesión de fotos
 
-## Qué hace
+- **Modo sesión** (app de escritorio): elige la carpeta donde caen las fotos (tethering de
+  Lightroom/Capture One, importación de la tarjeta…) y Comprimo optimiza **cada foto nueva al momento**.
+  Espera a que la cámara termine de escribir el archivo antes de leerlo.
+- **Guardado automático en carpeta**, con sufijo opcional (`IMG_0042_web.jpg`). Nunca sobrescribe:
+  si el nombre ya existe, añade (2), (3)…
+- **Preajustes**: Web y portfolio (2560 px, con copyright y sin GPS) · Redes sociales (JPEG 2048 px) ·
+  Entrega al cliente (tamaño completo, máxima fidelidad) · Galería de pruebas (1600 px) · Máximo ahorro (AVIF/WebP).
+- **Calidad automática por foto**: busca la compresión más fuerte que sigue pareciendo idéntica,
+  medida con SSIM multiescala sobre el archivo real.
+- **Metadatos bajo control**: conserva el EXIF (cámara, fecha, copyright) de JPEG a JPEG y quita el GPS salvo que lo pidas.
+- Comparador antes/después con zoom al 100 %, galería con miniaturas, vista de lista, ZIP de todo,
+  detección de duplicados, cancelar/reintentar, notificaciones del sistema y progreso en el Dock.
+- Formatos: JPEG, PNG (paleta con transparencia), WebP, AVIF y JPEG XL. Conversión entre ellos.
 
-- Arrastrar y soltar, selector múltiple y pegar desde el portapapeles (Ctrl+V). Sin límite de archivos.
-- Compresión **automática por imagen**: busca la calidad más baja que sigue pareciendo igual, medida con
-  SSIM multiescala sobre el resultado real.
-  - JPEG → MozJPEG · PNG → paleta ≤256 colores con alfa + OxiPNG (o sin pérdida si la paleta se nota) ·
-    WebP → libwebp (con o sin pérdida) · AVIF → libavif · JPEG XL → libjxl (beta).
-- Conversión entre JPEG, PNG, WebP, AVIF y JPEG XL, más un modo **automático** que prueba varios formatos y se queda con el más ligero.
-- Perfiles: Web (recomendado), Fotografía, Transparencia, Gráficos y texto. Calidad manual opcional.
-- Redimensionado: encajar, escalar por ancho o alto, rellenar (recorte centrado) y porcentaje. Nunca amplía.
-- Transparencia conservada; al convertir a JPEG se rellena con un color de fondo configurable (con aviso).
-- Metadatos: por defecto se eliminan. Opción de conservar el EXIF de JPEG a JPEG (con la orientación
-  normalizada y el GPS quitado salvo que lo pidas).
-- Si no se puede reducir, se conserva el original y se avisa; nunca se inventa un porcentaje.
-- Comparador antes/después con deslizador (también con teclado) y vista al 100 %.
-- Descarga individual y **Descargar todo (ZIP)** con nombres únicos.
-- Detección de duplicados (SHA-256), cancelar, reintentar y volver a procesar con otros ajustes.
-- Errores concretos: formato no admitido, archivo dañado o truncado, imagen animada, tope técnico de 100 MP.
-- Accesible (teclado, `aria-live`, axe sin violaciones graves) y responsive (desde 320 px), con modo oscuro.
+## Instalar en Mac
 
-## Requisitos
+1. Descarga el zip de tu Mac desde la página de *Releases* del repositorio (o desde el artefacto de GitHub Actions):
+   - Apple Silicon (M1, M2, M3, M4…): `Comprimo-1.0.0-mac-arm64.zip`
+   - Intel: `Comprimo-1.0.0-mac-x64.zip`
+   - ¿No sabes cuál? Menú  → *Acerca de este Mac*: si pone "Chip Apple", es arm64.
+2. Abre el zip y arrastra **Comprimo.app** a *Aplicaciones*.
+3. **La primera vez**, macOS dirá que no puede verificar el desarrollador. Es normal: la app tiene
+   firma ad-hoc, pero no está firmada con un certificado de Apple Developer ni notarizada (eso cuesta
+   99 $/año). Para abrirla:
+   - Intenta abrirla una vez y cierra el aviso.
+   - Ve a **Ajustes del Sistema → Privacidad y seguridad**, baja hasta el mensaje sobre Comprimo y pulsa **Abrir igualmente**.
+   - Alternativa por Terminal: `xattr -dr com.apple.quarantine /Applications/Comprimo.app`
+4. Requiere **macOS 13 Ventura o posterior** (lo exige Electron 44).
 
-- Node.js 20.19+ o 22.12+ (probado con 22.22) y npm.
-- Para usarla: cualquier navegador moderno (Chrome/Edge, Firefox, Safari). La vista previa de AVIF y
-  JPEG XL depende del navegador; los archivos generados son válidos en cualquier caso.
+## Desarrollo
 
-## Instalar y ejecutar
+Requisitos: Node.js 22 (o 20.19+) y npm.
 
 ```bash
 npm install
-npm run build      # build de producción en dist/
-npm run preview    # sirve dist/ en http://localhost:4173
+npm run dev            # versión web con recarga en caliente (http://localhost:5173)
+npm run desktop        # app de escritorio (Electron) sobre el build de producción
+npm run build && npm run preview   # versión web estática en http://localhost:4173
+npm run package:mac    # Comprimo.app (arm64 + x64) en release/
 ```
 
-Modo desarrollo con recarga en caliente: `npm run dev` (http://localhost:5173).
-
-`dist/` es un sitio **estático** (≈19 MB contando todos los códecs, que solo se descargan cuando hacen
-falta; la página inicial pesa ~85 kB gzip). Se puede servir con cualquier servidor de archivos estáticos.
-Ejecutarla en local no cuesta nada; publicarla en Internet depende del hosting que elijas, y no se
-promete alojamiento gratuito ni coste cero.
+`package:mac` funciona en un Mac (firma ad-hoc con `codesign`). Desde Linux también, pasando
+`RCODESIGN=/ruta/a/rcodesign` (y `ELECTRON_ZIP_DIR` si la descarga de Electron falla).
+El workflow `.github/workflows/mac.yml` lo hace en un Mac de GitHub, verifica la firma con
+`codesign --verify --deep --strict`, arranca la app empaquetada y, al subir una etiqueta `v*`, publica los zips como Release.
 
 ## Pruebas
 
 ```bash
-npm test             # unitarias + integración (Vitest, códecs WASM reales en Node) → 106 pruebas
-npm run test:e2e     # navegador (Playwright + Chromium) sobre el build de producción → 15 pruebas
-npm run bench        # benchmark reproducible → docs/benchmark-data.md
-npm run fixtures     # regenera tests/fixtures
+npm test               # unitarias + integración (códecs WASM reales en Node) → 110
+npm run test:e2e       # navegador (Playwright + Chromium) sobre el build → 17
+npm run test:electron  # app de escritorio (en Linux sin pantalla: xvfb-run -a npm run test:electron) → 5
+npm run bench          # benchmark reproducible → docs/benchmark-data.md
 ```
-
-Para `test:e2e` hace falta Chromium para Playwright (`npx playwright install chromium` si no lo tienes).
 
 ## Documentación
 
-- [docs/research.md](docs/research.md): investigación con REA, evidencias y límites.
-- [docs/feature-matrix.md](docs/feature-matrix.md): funciones del original frente a las de Comprimo.
-- [docs/architecture.md](docs/architecture.md): arquitectura y decisiones.
-- [docs/test-plan.md](docs/test-plan.md) y [docs/test-results.md](docs/test-results.md): plan y resultados de pruebas.
-- [docs/benchmark-results.md](docs/benchmark-results.md): mediciones de compresión.
-- [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md): dependencias y licencias.
+- [docs/research.md](docs/research.md): investigación con REA (TinyJPG/TinyPNG), evidencias y límites.
+- [docs/feature-matrix.md](docs/feature-matrix.md) · [docs/architecture.md](docs/architecture.md)
+- [docs/test-plan.md](docs/test-plan.md) · [docs/test-results.md](docs/test-results.md) · [docs/benchmark-results.md](docs/benchmark-results.md)
+- [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 
 ## Licencia
 
-MIT para el código de Comprimo. Las dependencias mantienen sus licencias (ver `THIRD_PARTY_LICENSES.md`).
+MIT. Inspirado en el flujo de TinyJPG/TinyPNG, pero sin relación con Tinify y sin usar su API.

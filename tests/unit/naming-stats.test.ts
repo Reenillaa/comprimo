@@ -56,3 +56,13 @@ describe('savings/totals', () => {
     expect(formatBytes(2_340_000)).toBe('2,3 MB');
   });
 });
+
+describe('withSuffix', () => {
+  it('inserta antes de la extensión y limpia caracteres no válidos', async () => {
+    const { withSuffix } = await import('../../src/engine/naming');
+    expect(withSuffix('foto.jpg', '_web')).toBe('foto_web.jpg');
+    expect(withSuffix('foto', '-x')).toBe('foto-x');
+    expect(withSuffix('a.b.png', '')).toBe('a.b.png');
+    expect(withSuffix('a.png', '/../x')).toBe('a..x.png');
+  });
+});

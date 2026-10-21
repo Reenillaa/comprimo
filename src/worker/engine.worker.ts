@@ -12,6 +12,7 @@ scope.onmessage = async (e: MessageEvent<JobRequest>) => {
   let last = 0;
   try {
     const result = await processImage(new Uint8Array(bytes), options, browserCodecs, {
+      thumbnail: 512,
       onProgress: (fraction, label) => {
         // Throttle: progress messages are cheap but there is no point sending hundreds.
         if (fraction - last >= 0.02 || fraction === 1) {
@@ -25,7 +26,9 @@ scope.onmessage = async (e: MessageEvent<JobRequest>) => {
       result.bytes.byteOffset === 0 && result.bytes.byteLength === result.bytes.buffer.byteLength
         ? result.bytes
         : result.bytes.slice();
-    post({ id, type: 'done', result: { ...result, bytes: out } }, [out.buffer]);
+    const transfer: Transferable[] = [out.buffer];
+    if (result.thumbnail) transfer.push(result.thumbnail.buffer);
+    post({ id, type: 'done', result: { ...result, bytes: out } }, transfer);
   } catch (err) {
     const code = err instanceof ProcessingError ? err.code : 'internal';
     const message =

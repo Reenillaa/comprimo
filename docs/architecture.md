@@ -97,3 +97,32 @@ src/
 - Local: `npm run build && npm run preview` (gratis, sin dependencias externas).
 - Público: cualquier hosting estático. **No se promete** alojamiento gratis ni coste cero de infraestructura:
   depende del proveedor que elijas.
+
+## App de escritorio (Electron, macOS)
+
+```
+electron/
+  main.cjs      # proceso principal: ventana, protocolo app://, menú, IPC validado
+  preload.cjs   # puente mínimo (contextBridge) → window.comprimoDesktop
+src/app/desktop.ts  # tipos del puente; undefined en la versión web
+```
+
+- **Misma interfaz** que la web: el build estático `dist/` se sirve desde un esquema privado
+  `app://comprimo/` (estándar y seguro), así funcionan los workers ES y el `fetch` de los `.wasm`,
+  también desde dentro de `app.asar`.
+- **Aislamiento**: `contextIsolation`, `sandbox`, sin `nodeIntegration`; navegación y ventanas emergentes
+  bloqueadas; todos los permisos web denegados.
+- **Acceso a disco por lista blanca**: solo carpetas elegidas por el usuario en un diálogo nativo
+  durante la sesión. `save` nunca sobrescribe (`flag: 'wx'` + "(2)") y limpia el nombre con `basename`
+  (sin recorrido de rutas). `read` tiene un tope de 512 MB por archivo.
+- **Modo sesión**: `fs.watch` de la carpeta elegida. Un archivo se entrega cuando su tamaño está estable
+  durante 1,2 s (la cámara o el software de tethering escriben por partes). Se rechaza una salida dentro de
+  la carpeta vigilada, o al revés, para no entrar en bucle.
+- **Integración con macOS**: semáforos integrados (`hiddenInset`), vibrancy, menú de app (⌘O, ⌘⇧O, ⌘C/⌘V/⌘Q),
+  progreso en el Dock y notificación al terminar un lote (solo si la ventana no está enfocada).
+- **Ganchos de prueba** (solo por variable de entorno): `COMPRIMO_E2E_OUTPUT_DIR`, `COMPRIMO_E2E_WATCH_DIR`
+  sustituyen el diálogo nativo y `COMPRIMO_USER_DATA` usa un perfil temporal.
+- **Empaquetado**: `scripts/package-mac.mjs` (@electron/packager) → `Comprimo.app` arm64 y x64, firma ad-hoc,
+  zip que conserva los symlinks. Sin notarizar (requiere cuenta de Apple Developer).
+- **Miniaturas**: el worker devuelve un WebP de 512 px con cada resultado, para que una galería de cientos
+  de fotos de 24 MP no obligue a decodificar los originales en la interfaz.

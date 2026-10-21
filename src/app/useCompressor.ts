@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { outputName } from '../engine/naming';
+import { outputName, withSuffix } from '../engine/naming';
 import type { SniffedKind } from '../engine/sniff';
 import type { ImageFormat, ProcessOptions } from '../engine/types';
 import { JobError, WorkerPool } from '../worker/pool';
@@ -22,6 +22,8 @@ export interface ItemResult {
   larger: boolean;
   warnings: string[];
   candidates?: { format: ImageFormat; size: number }[];
+  /** Object URL of the small WebP preview produced by the worker. */
+  thumbUrl?: string;
   ms: number;
 }
 
@@ -42,18 +44,40 @@ export interface Item {
   originalUrl: string;
   result?: ItemResult;
   options: ProcessOptions;
+  /** 'session' = arrived from the watched folder. */
+  origin: 'manual' | 'session';
+  savedPath?: string;
+  saveError?: string;
+  addedAt: number;
 }
+
+export interface CompressorHooks {
+  /** Suffix added to output names ("_web"). */
+  suffix: string;
+  /** Called once per finished item; return the saved path (desktop) or nothing. */
+  onDone?: (item: Item, result: ItemResult) => Promise<string | void>;
+}
+
+const revoke = (it: Item) => {
+  URL.revokeObjectURL(it.originalUrl);
+  if (it.result) {
+    URL.revokeObjectURL(it.result.url);
+    if (it.result.thumbUrl) URL.revokeObjectURL(it.result.thumbUrl);
+  }
+};
 
 let counter = 0;
 const newId = () => `img-${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
-export function useCompressor(options: ProcessOptions) {
+export function useCompressor(options: ProcessOptions, hooks: CompressorHooks) {
   const [items, setItems] = useState<Item[]>([]);
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const poolRef = useRef<WorkerPool | null>(null);
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  const hooksRef = useRef(hooks);
+  hooksRef.current = hooks;
 
   const pool = () => (poolRef.current ??= new WorkerPool());
 
@@ -61,10 +85,7 @@ export function useCompressor(options: ProcessOptions) {
     () => () => {
       poolRef.current?.dispose();
       poolRef.current = null;
-      for (const it of itemsRef.current) {
-        URL.revokeObjectURL(it.originalUrl);
-        if (it.result) URL.revokeObjectURL(it.result.url);
-      }
+      for (const it of itemsRef.current) revoke(it);
     },
     [],
   );
@@ -76,8 +97,11 @@ export function useCompressor(options: ProcessOptions) {
   const start = useCallback(
     (item: Item, opts: ProcessOptions) => {
       patch(item.id, (it) => {
-        if (it.result) URL.revokeObjectURL(it.result.url);
-        return { status: 'queued', progress: 0, label: 'En cola', error: undefined, result: undefined, options: opts };
+        if (it.result) {
+          URL.revokeObjectURL(it.result.url);
+          if (it.result.thumbUrl) URL.revokeObjectURL(it.result.thumbUrl);
+        }
+        return { status: 'queued', progress: 0, label: 'En cola', error: undefined, result: undefined, options: opts, savedPath: undefined, saveError: undefined };
       });
       pool()
         .run(item.id, () => item.file.arrayBuffer(), opts, (fraction, label) =>
@@ -88,7 +112,7 @@ export function useCompressor(options: ProcessOptions) {
           const result: ItemResult = {
             blob,
             url: URL.createObjectURL(blob),
-            name: outputName(item.name, r.format),
+            name: r.usedOriginal ? withSuffix(item.name, hooksRef.current.suffix) : withSuffix(outputName(item.name, r.format), hooksRef.current.suffix),
             size: blob.size,
             format: r.format,
             width: r.width,
@@ -100,9 +124,17 @@ export function useCompressor(options: ProcessOptions) {
             larger: r.larger,
             warnings: r.warnings,
             candidates: r.candidates,
+            thumbUrl: r.thumbnail ? URL.createObjectURL(new Blob([r.thumbnail as Uint8Array<ArrayBuffer>], { type: 'image/webp' })) : undefined,
             ms: r.ms,
           };
           patch(item.id, { status: 'done', progress: 1, label: 'Terminado', result });
+          const onDone = hooksRef.current.onDone;
+          if (onDone) {
+            onDone(item, result).then(
+              (savedPath) => savedPath && patch(item.id, { savedPath }),
+              (err: Error) => patch(item.id, { saveError: err.message || 'No se pudo guardar.' }),
+            );
+          }
         })
         .catch((e: Error) => {
           const cancelled = e instanceof JobError && e.code === 'cancelled';
@@ -118,9 +150,11 @@ export function useCompressor(options: ProcessOptions) {
   );
 
   const addFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[], origin: Item['origin'] = 'manual') => {
       const opts = optionsRef.current;
       const fresh: Item[] = files.map((file) => ({
+        origin,
+        addedAt: Date.now(),
         id: newId(),
         file,
         name: file.name || 'imagen',
@@ -183,10 +217,7 @@ export function useCompressor(options: ProcessOptions) {
     poolRef.current?.cancel(id);
     setItems((list) => {
       const it = list.find((i) => i.id === id);
-      if (it) {
-        URL.revokeObjectURL(it.originalUrl);
-        if (it.result) URL.revokeObjectURL(it.result.url);
-      }
+      if (it) revoke(it);
       return list.filter((i) => i.id !== id);
     });
   }, []);
@@ -194,10 +225,7 @@ export function useCompressor(options: ProcessOptions) {
   const clear = useCallback(() => {
     poolRef.current?.cancelAll();
     setItems((list) => {
-      for (const it of list) {
-        URL.revokeObjectURL(it.originalUrl);
-        if (it.result) URL.revokeObjectURL(it.result.url);
-      }
+      for (const it of list) revoke(it);
       return [];
     });
   }, []);

@@ -1,13 +1,16 @@
 # Resultados de las pruebas
 
-Última ejecución: 2026-10-21, contenedor Linux x64, Node 22.22.0, Chromium 141 (Playwright 1.56.1).
+Última ejecución: 2026-10-21, contenedor Linux x64, Node 22.22.0, Chromium 141 (Playwright 1.56.1), Electron 44.9.2 bajo Xvfb.
 
 ## Resumen
 
 | Suite | Comando | Resultado |
 |---|---|---|
-| Unitarias (7 archivos con integración) | `npm test` | **106/106 superadas** |
-| Navegador (build de producción) | `npm run test:e2e` | **15/15 superadas** |
+| Unitarias + integración | `npm test` | **110/110 superadas** |
+| Navegador (build de producción, interfaz nueva) | `npm run test:e2e` | **17/17 superadas** |
+| App de escritorio (Electron, Linux) | `xvfb-run -a npm run test:electron` | **5/5 superadas** |
+| App empaquetada con asar (Linux, mismo asar que la de Mac) | `tests/electron/packaged.spec.ts` | **1/1 superada** |
+| App de Mac en un Mac real | workflow `mac.yml` | ❌ **Pendiente**: requiere el repositorio en GitHub |
 | Typecheck | `tsc -p tsconfig.json` | sin errores |
 | Benchmark | `npm run bench` | ejecutado → `benchmark-data.md` |
 
@@ -39,6 +42,11 @@
 | Sin llamadas a APIs comerciales | ✅ Completada | e2e: todas las peticiones a 127.0.0.1/blob; la CSP bloquea `api.tinify.com`; REA sobre el build (ver `evidence/rea-own-build-summary.json`) |
 | Sin bloqueos de pago | ✅ Completada | e2e: sin textos de pago |
 | Firefox / Safari | ❌ Pendiente | solo hay Chromium en el entorno |
+| Modo sesión (archivo escrito por partes) | ✅ Completada | Electron e2e: la "cámara" escribe en trozos y se procesa una sola vez |
+| Guardado sin sobrescribir y con sufijo | ✅ Completada | Electron e2e: `photo_web (2).png` |
+| Seguridad del puente | ✅ Completada | sin `require`/`process` en la interfaz; escritura fuera de las carpetas elegidas rechazada; `../` neutralizado |
+| Bucle salida dentro de la carpeta vigilada | ✅ Completada | rechazado con mensaje |
+| Firma ad-hoc de la app de Mac | ⚠️ Parcial | firma `ADHOC` presente en los binarios; `rcodesign verify` no es fiable con firmas ad-hoc; la verificación real (`codesign --verify --deep --strict`) está en el CI de Mac |
 | Comparación con TinyJPG | ❌ Pendiente | servicio inaccesible (red bloqueada) |
 
 ## Fallos encontrados por las pruebas y corregidos
@@ -53,3 +61,10 @@
    `imageOrientation: 'none'` como `'from-image'`, así que la foto se giraba dos veces. Ahora el decodificador
    declara `oriented` y el pipeline solo rota si hace falta. Se añadió un E2E que compara píxel a píxel con
    `autoOrient` de libvips.
+
+## Fallos encontrados en la versión 2 (interfaz nueva y escritorio)
+
+8. La barra de estadísticas se aplastaba (un hijo flex se encogía dentro del área con scroll). Lo destaparon las capturas.
+9. Faltaba el *skip link* con el nuevo layout: con teclado había que recorrer toda la barra lateral. Lo destapó el e2e de teclado.
+10. Los botones pequeños medían 32 px en móvil (objetivo táctil escaso). Ahora 40 px; lo destapó el e2e de móvil.
+11. El aviso de metadatos salía en cada PNG/WebP sin EXIF (ruido). Ahora solo sale si de verdad se pierde EXIF.

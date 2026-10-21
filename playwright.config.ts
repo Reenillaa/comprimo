@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: 'tests/e2e',
+  testDir: 'tests',
+  testMatch: ['e2e/**/*.spec.ts', 'electron/**/*.spec.ts'],
   timeout: 180_000,
   expect: { timeout: 120_000 },
   fullyParallel: false,
@@ -13,7 +14,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
+    { name: 'desktop', testMatch: 'e2e/**/*.spec.ts', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
+    // Electron app (needs a display: run under xvfb-run on headless Linux)
+    { name: 'electron', testMatch: 'electron/**/*.spec.ts' },
   ],
   webServer: {
     command: 'npm run preview -- --host 127.0.0.1',

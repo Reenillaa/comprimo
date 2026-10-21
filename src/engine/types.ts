@@ -50,6 +50,8 @@ export interface ProcessResult {
   warnings: string[];
   /** Candidates tried in auto-format mode, smallest first. */
   candidates?: { format: ImageFormat; size: number }[];
+  /** Small WebP preview of the result (only when requested). */
+  thumbnail?: Uint8Array;
   ms: number;
 }
 

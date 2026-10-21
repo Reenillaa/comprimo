@@ -84,7 +84,7 @@ test.describe('Comprimo', () => {
     }, buf);
     const zone = page.getByTestId('dropzone');
     await zone.dispatchEvent('dragenter', { dataTransfer: dt });
-    await expect(page.getByText('¡Suelta para empezar!')).toBeVisible();
+    await expect(page.getByText('¡Suéltalas!')).toBeVisible();
     await zone.dispatchEvent('drop', { dataTransfer: dt });
     await waitAll(page, 2);
     await expect(row(page, 'arrastrada.jpg')).toHaveAttribute('data-status', 'done');
@@ -126,7 +126,6 @@ test.describe('Comprimo', () => {
 
   test('conversión PNG → WebP y redimensionado desde los ajustes', async ({ page }) => {
     await page.goto('/');
-    await page.locator('details.settings summary').click();
     await page.getByLabel('Formato de salida').selectOption('webp');
     await page.getByLabel('Redimensionar').selectOption('fit');
     await page.getByLabel('Ancho', { exact: true }).fill('300');
@@ -156,7 +155,6 @@ test.describe('Comprimo', () => {
 
   test('cancelar y reintentar', async ({ page }) => {
     await page.goto('/');
-    await page.locator('details.settings summary').click();
     await page.getByLabel('Formato de salida').selectOption('avif'); // slowest encoder
     await page.getByTestId('file-input').setInputFiles([FX + 'photo-large.jpg']);
     const r = row(page, 'photo-large.jpg');
@@ -206,8 +204,9 @@ test.describe('Comprimo', () => {
 
   test('flujo con teclado: el botón abre el selector', async ({ page }) => {
     await page.goto('/');
-    await page.keyboard.press('Tab'); // skip link
     await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Ir a añadir fotos' })).toBeFocused();
+    await page.keyboard.press('Enter'); // skip link jumps straight to the add button
     await expect(page.getByRole('button', { name: 'Elegir imágenes' })).toBeFocused();
     const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.keyboard.press('Enter')]);
     expect(chooser.isMultiple()).toBe(true);
@@ -221,7 +220,6 @@ test.describe('Comprimo', () => {
     expect(empty.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')).map((v) => v.id)).toEqual([]);
     await page.getByTestId('file-input').setInputFiles([FX + 'photo.png', FX + 'fake.jpg']);
     await waitAll(page, 2);
-    await page.locator('details.settings summary').click();
     const full = await new AxeBuilder({ page }).analyze();
     expect(full.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? '')).map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
   });
@@ -231,7 +229,6 @@ test.describe('Comprimo', () => {
     await page.goto('/');
     await page.getByTestId('file-input').setInputFiles([FX + 'photo-exif.jpg', FX + 'fake.jpg']);
     await waitAll(page, 2);
-    await page.locator('details.settings summary').click();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
     const link = row(page, 'photo-exif.jpg').getByTestId('download-link');
@@ -239,7 +236,37 @@ test.describe('Comprimo', () => {
     await expect(link).toBeInViewport();
     const box = (await link.boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(375);
-    expect(box.height).toBeGreaterThanOrEqual(36); // touch target
+    expect(box.height).toBeGreaterThanOrEqual(40); // touch target
+  });
+
+  test('preajuste "Redes sociales" + sufijo: JPEG de 2048 px con nombre _rrss', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('preset-social').click();
+    await expect(page.getByTestId('preset-social')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByLabel('Sufijo del nombre')).toHaveValue('_rrss');
+    await page.getByTestId('file-input').setInputFiles([FX + 'photo-large.jpg', FX + 'alpha.png']);
+    await waitAll(page, 2);
+    const [dl] = await Promise.all([page.waitForEvent('download'), row(page, 'photo-large.jpg').getByTestId('download-link').click()]);
+    expect(dl.suggestedFilename()).toBe('photo-large_rrss.jpg');
+    const m = await sharp(await readDownload(dl)).metadata();
+    expect([m.format, m.width, m.height]).toEqual(['jpeg', 2048, 1536]);
+    // PNG with alpha converted to JPEG for social: flattened, renamed
+    await expect(row(page, 'alpha.png')).toContainText('JPEG');
+    // changing a setting leaves the preset ("personalizado")
+    await page.getByLabel('Formato de salida').selectOption('webp');
+    await expect(page.getByTestId('preset-social')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  test('vista de lista, tema claro y persistencia de preferencias', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('file-input').setInputFiles([FX + 'tiny.png']);
+    await waitAll(page, 1);
+    await page.getByRole('radio', { name: 'Lista' }).check();
+    await expect(page.locator('.gallery')).toHaveClass(/is-list/);
+    await page.getByRole('button', { name: 'Cambiar a tema claro' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   });
 
   test('sin muros de pago ni textos comerciales', async ({ page }) => {

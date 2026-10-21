@@ -239,3 +239,23 @@ describe('orientación EXIF', () => {
     expect(similarity(ref, await vips(r.bytes))).toBeGreaterThan(0.95);
   });
 });
+
+describe('miniatura', () => {
+  it('devuelve una vista previa WebP de ≤512 px cuando se pide', async () => {
+    const r = await processImage(fx('photo-large.jpg'), opts(), codecs, { thumbnail: 512 });
+    expect(sniff(r.thumbnail!).kind).toBe('webp');
+    const m = await sharp(Buffer.from(r.thumbnail!)).metadata();
+    expect(Math.max(m.width!, m.height!)).toBe(512);
+  });
+  it('sin pedirla no se genera', async () => {
+    const r = await processImage(fx('tiny.png'), opts(), codecs);
+    expect(r.thumbnail).toBeUndefined();
+  });
+});
+
+describe('avisos de metadatos sin ruido', () => {
+  it('un PNG sin EXIF no avisa aunque "conservar EXIF" esté activo', async () => {
+    const r = await processImage(fx('photo.png'), opts({ metadata: { keep: true, keepLocation: false } }), codecs);
+    expect(r.warnings.join()).not.toMatch(/metadatos/);
+  });
+});

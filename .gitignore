@@ -1,5 +1,8 @@
 node_modules
 dist
+release
+build/stage
 test-results
 playwright-report
 *.log
+build/linux-test

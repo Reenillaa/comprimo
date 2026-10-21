@@ -1,0 +1,66 @@
+name: macOS app
+
+# Builds, tests and packages Comprimo.app on a real Mac.
+# Push a tag like v1.0.0 to publish the zips as a GitHub Release.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Unit + integration tests (real WASM codecs)
+        run: npm test
+
+      - name: Browser tests (Chromium)
+        run: |
+          npx playwright install chromium
+          npm run build
+          npm run test:e2e
+
+      - name: Desktop tests (Electron on macOS)
+        run: npm run test:electron
+
+      - name: Package Comprimo.app (arm64 + x64, ad-hoc signed)
+        run: node scripts/package-mac.mjs
+
+      - name: Verify signatures with Apple's codesign
+        run: |
+          for a in arm64 x64; do
+            codesign --verify --deep --strict --verbose=2 "release/Comprimo-darwin-$a/Comprimo.app"
+            codesign -dv "release/Comprimo-darwin-$a/Comprimo.app" 2>&1 | grep -E "Signature|Identifier"
+          done
+
+      - name: Launch the packaged app (arm64)
+        env:
+          COMPRIMO_PACKAGED_APP: ${{ github.workspace }}/release/Comprimo-darwin-arm64/Comprimo.app/Contents/MacOS/Comprimo
+        run: npx playwright test --project=electron tests/electron/packaged.spec.ts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Comprimo-mac
+          path: release/*.zip
+          if-no-files-found: error
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" release/*.zip --title "Comprimo ${GITHUB_REF_NAME}" --notes-file docs/release-notes.md
